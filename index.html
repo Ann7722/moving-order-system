@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>搬家订单管理系统 | Moving Order Manager</title>
+  <style>
+    :root {
+      --bg: #f3f4f6; --card: #ffffff; --text: #111827; --text2: #6b7280;
+      --border: #e5e7eb; --primary: #4f46e5; --primary-soft: #eef2ff;
+      --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --info: #3b82f6;
+      --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.6; padding: 16px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+    h1 { font-size: 20px; display: flex; align-items: center; gap: 8px; }
+    .subtitle { font-size: 12px; color: var(--text2); }
+    .nav-tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+    .nav-tab {
+      padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
+      background: #fff; color: var(--text2); font-size: 13px; cursor: pointer;
+      transition: all .15s; font-weight: 500;
+    }
+    .nav-tab:hover { background: var(--bg); }
+    .nav-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500;
+    }
+    .badge-confirmed { background: #d1fae5; color: #065f46; }
+    .badge-pending { background: #fef3c7; color: #92400e; }
+    .badge-completed { background: #dbeafe; color: #1e40af; }
+    .badge-cancelled { background: #fee2e2; color: #991b1b; }
+
+    .panel {
+      background: var(--card); border-radius: var(--radius); border: 1px solid var(--border);
+      box-shadow: var(--shadow); padding: 16px; margin-bottom: 16px;
+    }
+    .panel-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px; border: none;
+      padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: opacity .2s;
+    }
+    .btn:hover { opacity: .9; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-warning { background: var(--warning); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--text2); font-weight: 500; font-size: 12px; background: #f9fafb; }
+    tr:hover td { background: #f9fafb; }
+    .table-actions { display: flex; gap: 4px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .form-group { margin-bottom: 12px; }
+    .form-label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; font-weight: 500; }
+    input, textarea, select {
+      width: 100%; border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 10px; font-size: 13px; font-family: inherit; color: var(--text);
+    }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+    textarea { min-height: 100px; resize: vertical; }
+
+    /* Comparison styling */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 768px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-col { background: #f9fafb; border-radius: 8px; padding: 12px; border: 1px solid var(--border); }
+    .compare-col h4 { font-size: 13px; margin-bottom: 10px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+    .compare-field { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; }
+    .compare-label { flex: none; width: 130px; font-size: 11px; color: var(--text2); padding-top: 2px; }
+    .compare-value { flex: 1; font-size: 13px; padding: 4px 8px; border-radius: 6px; background: #fff; border: 1px solid var(--border); min-height: 28px; }
+    .compare-value.changed { background: #fef2f2; border-color: var(--danger); color: var(--danger); }
+    .compare-value.new { background: #ecfdf5; border-color: var(--success); color: var(--success); }
+
+    .field-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+    .field-label { flex: none; width: 140px; color: var(--text2); font-size: 12px; padding-top: 2px; }
+    .field-value { flex: 1; min-width: 0; }
+    .field-value input, .field-value textarea {
+      width: 100%; border: 1px solid transparent; border-radius: 6px;
+      padding: 3px 8px; font-size: 13px; font-family: inherit; background: transparent;
+    }
+    .field-value input:hover, .field-value textarea:hover { background: #f9fafb; }
+    .field-value input:focus, .field-value textarea:focus { background: #fff; border-color: var(--primary); outline: none; }
+    .field-value textarea { min-height: 50px; resize: vertical; }
+
+    .section-title { font-weight: 600; color: var(--text); margin: 12px 0 8px; font-size: 13px; border-bottom: 1px dashed var(--border); padding-bottom: 6px; }
+    .divider { border: none; border-top: 1px dashed var(--border); margin: 10px 0; }
+    .highlight { color: var(--warning); font-weight: 500; }
+    .danger-text { color: var(--danger); }
+
+    .email-box {
+      background: #f8f9fb; border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px; font-size: 13px; line-height: 1.8; white-space: pre-wrap; color: #374151;
+    }
+
+    .hidden { display: none !important; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text2); font-size: 13px; }
+    .hint { font-size: 12px; color: var(--text2); margin-top: 8px; }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+    .dot-confirmed { background: var(--success); }
+    .dot-pending { background: var(--warning); }
+    .dot-completed { background: var(--info); }
+    .dot-cancelled { background: var(--danger); }
+
+    .change-item {
+      background: #fff; border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px; margin-bottom: 10px;
+    }
+    .change-item .change-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .change-item .change-field { font-weight: 600; font-size: 13px; }
+    .change-item .change-values { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; }
+    .change-item .old-val { color: var(--text2); text-decoration: line-through; }
+    .change-item .new-val { color: var(--danger); font-weight: 500; }
+    .change-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+    .search-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .search-bar input { flex: 1; min-width: 200px; }
+
+    .audio-upload {
+      border: 2px dashed var(--border); border-radius: 10px; padding: 30px;
+      text-align: center; cursor: pointer; transition: all .2s;
+    }
+    .audio-upload:hover { border-color: var(--primary); background: var(--primary-soft); }
+    .audio-upload.dragover { border-color: var(--primary); background: var(--primary-soft); }
+
+    /* Recording UI */
+    .recorder-ui { text-align: center; padding: 20px; }
+    .rec-btn {
+      width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--danger);
+      background: #fff; cursor: pointer; display: inline-flex; align-items: center;
+      justify-content: center; font-size: 24px; transition: all .2s;
+    }
+    .rec-btn:hover { transform: scale(1.05); }
+    .rec-btn.recording { background: var(--danger); color: #fff; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+    .rec-status { margin-top: 10px; font-size: 13px; color: var(--text2); }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center; z-index: 100;
+      padding: 20px;
+    }
+    .modal-content {
+      background: #fff; border-radius: var(--radius); max-width: 600px; width: 100%;
+      max-height: 90vh; overflow-y: auto; padding: 20px;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .modal-header h3 { font-size: 16px; }
+    .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text2); }
+
+    /* Login */
+    .login-screen {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; align-items: center; justify-content: center; z-index: 1000;
+    }
+    .login-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1); padding: 32px; width: 100%; max-width: 400px;
+      text-align: center;
+    }
+    .login-card h2 { font-size: 20px; margin-bottom: 6px; }
+    .login-card .sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+    .login-card input {
+      width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 15px; margin-bottom: 12px; text-align: center;
+    }
+    .login-card input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+    .login-card .hint { font-size: 12px; color: var(--text2); margin-top: 10px; }
+    .login-card .error { color: var(--danger); font-size: 13px; margin-top: 8px; min-height: 20px; }
+  </style>
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div style="font-size:48px;margin-bottom:12px;">🔐</div>
+      <h2 id="loginTitle">欢迎使用 / Welcome</h2>
+      <p class="sub" id="loginSub">搬家订单管理系统 / Moving Order Manager</p>
+      <input type="password" id="loginPassword" placeholder="输入密码 / Enter password" onkeydown="if(event.key==='Enter')doLogin()">
+      <div style="display:flex;gap:8px;justify-content:center;">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()" id="loginBtn">进入系统 / Enter</button>
+      </div>
+      <div class="error" id="loginError"></div>
+      <p class="hint" id="loginHint">首次使用请设置密码 / First time? Set your password</p>
+    </div>
+  </div>
+
+  <div class="container" id="mainApp" style="display:none;">
+    <header>
+      <div>
+        <h1>📦 搬家订单管理系统</h1>
+        <p class="subtitle">Moving Order Manager — 预订 · 整理 · 修改 · 确认</p>
+      </div>
+      <div class="btn-row" style="margin-top:0;">
+        <span class="badge badge-confirmed"><span class="status-dot dot-confirmed"></span>已确认 <b id="countConfirmed">0</b></span>
+        <span class="badge badge-pending"><span class="status-dot dot-pending"></span>待修改 <b id="countPending">0</b></span>
+        <span class="badge badge-completed"><span class="status-dot dot-completed"></span>已完成 <b id="countCompleted">0</b></span>
+        <button class="btn btn-sm btn-secondary" onclick="logout()">🚪 退出 / Logout</button>
+      </div>
+    </header>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('list')" id="tab-list">📋 预订表 / Order List</button>
+      <button class="nav-tab" onclick="switchTab('new')" id="tab-new">➕ 新建订单 / New Order</button>
+      <button class="nav-tab" onclick="switchTab('modify')" id="tab-modify">📝 修改订单 / Modify</button>
+    </div>
+
+    <!-- ===== TAB: ORDER LIST ===== -->
+    <div id="page-list">
+      <div class="panel">
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="搜索姓名、电话、地址... / Search name, phone, address..." oninput="renderOrderList()">
+          <select id="filterStatus" onchange="renderOrderList()" style="width:140px;">
+            <option value="">全部状态 / All</option>
+            <option value="confirmed">已确认 / Confirmed</option>
+            <option value="pending">待修改 / Pending</option>
+            <option value="completed">已完成 / Completed</option>
+            <option value="cancelled">已取消 / Cancelled</option>
+          </select>
+          <button class="btn btn-primary" onclick="switchTab('new')">➕ 新建订单</button>
+          <button class="btn btn-secondary" onclick="exportOrderListCSV()">📥 导出CSV / Export</button>
+          <button class="btn btn-secondary" onclick="copyOrderList()">📋 复制列表 / Copy</button>
+        </div>
+        <div id="orderListContainer">
+          <div class="empty-state">暂无订单，点击「新建订单」开始<br>No orders yet. Click "New Order" to start.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TAB: NEW ORDER ===== -->
+    <div id="page-new" class="hidden">
+      <div class="panel">
+        <div class="panel-title">📝 新建订单 / New Order</div>
+        <div class="grid-2">
+          <div>
+            <div class="form-group">
+              <label class="form-label">员工原始记录 / Raw Notes</label>
+              <textarea id="newRawInput" placeholder="粘贴员工随手记的内容... / Paste raw notes here..." style="min-height:200px;"></textarea>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="generateNewOrder()">✨ 智能整理 / Generate</button>
+              <button class="btn btn-secondary" onclick="loadNewDemo()">加载示例 / Demo</button>
+              <button class="btn btn-secondary" onclick="clearNewForm()">清空 / Clear</button>
+            </div>
+          </div>
+          <div>
+            <div class="form-group">
+              <label class="form-label">或上传通话录音 / Or Upload Call Recording</label>
+              <div class="audio-upload" onclick="document.getElementById('audioFile').click()" ondrop="handleAudioDrop(event)" ondragover="event.preventDefault()" ondragleave="this.classList.remove('dragover')">
+                <div style="font-size:28px;margin-bottom:8px;">🎙️</div>
+                <div style="font-size:13px;color:var(--text2);">点击或拖拽音频文件到这里<br>Click or drag audio file here</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:6px;">支持 MP3, M4A, WAV, WEBM</div>
+              </div>
+              <input type="file" id="audioFile" accept="audio/*" class="hidden" onchange="handleAudioSelect(event)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">或使用麦克风实时转写 / Or Use Microphone</label>
+              <div class="recorder-ui">
+                <button class="rec-btn" id="recBtn" onclick="toggleRecording()">🎤</button>
+                <div class="rec-status" id="recStatus">点击开始录音 / Click to record</div>
+                <div id="recResult" style="margin-top:10px;font-size:13px;text-align:left;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="newOrderForm" class="hidden">
+        <div class="panel">
+          <div class="panel-title">📋 确认单信息 / Confirmation Details <span class="badge badge-confirmed" style="margin-left:8px;">可编辑 / Editable</span></div>
+          <div id="newFormFields"></div>
+          <div class="btn-row" style="margin-top:16px;">
+            <button class="btn btn-success" onclick="saveNewOrder()">💾 保存订单 / Save Order</button>
+            <button class="btn btn-secondary" onclick="previewEmail('new')">📧 预览邮件 / Preview Email</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TAB: MODIFY ORDER ===== -->
+    <div id="page-modify" class="hidden">
+      <!-- Step 1: Select Order -->
+      <div id="modStep1" class="panel">
+        <div class="panel-title">🔍 步骤 1：选择要修改的订单 / Step 1: Select Order</div>
+        <div id="modOrderList"></div>
+      </div>
+
+      <!-- Step 2: Input New Content -->
+      <div id="modStep2" class="panel hidden">
+        <div class="panel-title">📝 步骤 2：导入修改内容 / Step 2: Import Changes</div>
+        <div class="grid-2">
+          <div>
+            <div class="form-group">
+              <label class="form-label">原订单信息 / Original Order</label>
+              <div id="modOriginalPreview" style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;max-height:300px;overflow-y:auto;"></div>
+            </div>
+          </div>
+          <div>
+            <div class="form-group">
+              <label class="form-label">新内容（员工随手记或录音）/ New Content</label>
+              <textarea id="modNewInput" placeholder="粘贴客户的新要求...例如：客户来电说把搬家时间从明天改到下周一上午10点，另外加一台钢琴..." style="min-height:120px;"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">或上传新的通话录音 / Or Upload New Recording</label>
+              <div class="audio-upload" onclick="document.getElementById('modAudioFile').click()">
+                <div style="font-size:24px;margin-bottom:6px;">🎙️</div>
+                <div style="font-size:12px;color:var(--text2);">点击上传音频 / Click to upload</div>
+              </div>
+              <input type="file" id="modAudioFile" accept="audio/*" class="hidden" onchange="handleModAudioSelect(event)">
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="compareChanges()">🔍 比对修改 / Compare</button>
+              <button class="btn btn-secondary" onclick="cancelModify()">取消 / Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Review Changes -->
+      <div id="modStep3" class="panel hidden">
+        <div class="panel-title">⚠️ 步骤 3：确认修改 / Step 3: Review & Confirm</div>
+        <div id="modComparisonResult"></div>
+        <div class="btn-row" style="margin-top:16px;">
+          <button class="btn btn-success" onclick="applyChanges()">✅ 确认并保存修改 / Confirm & Save</button>
+          <button class="btn btn-secondary" onclick="backToModStep2()">返回修改 / Back</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Email Preview Modal -->
+    <div id="emailModal" class="modal-overlay hidden" onclick="if(event.target===this)closeEmailModal()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>📧 确认邮件预览 / Email Preview</h3>
+          <button class="close-btn" onclick="closeEmailModal()">&times;</button>
+        </div>
+        <div class="email-box" id="emailPreviewContent"></div>
+        <div class="btn-row" style="margin-top:12px;">
+          <button class="btn btn-success" onclick="copyEmailPreview()">📋 复制 / Copy</button>
+          <button class="btn btn-secondary" onclick="closeEmailModal()">关闭 / Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== DATA & STATE ==========
+    const STORAGE_KEY = 'moving_orders_v2';
+    let orders = [];
+    let currentModifyingOrder = null;
+    let pendingChanges = [];
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
+    const STATUS_LABELS = {
+      confirmed: { text: '已确认 / Confirmed', class: 'badge-confirmed', dot: 'dot-confirmed' },
+      pending: { text: '待修改 / Pending', class: 'badge-pending', dot: 'dot-pending' },
+      completed: { text: '已完成 / Completed', class: 'badge-completed', dot: 'dot-completed' },
+      cancelled: { text: '已取消 / Cancelled', class: 'badge-cancelled', dot: 'dot-cancelled' }
+    };
+
+    const FIELD_DEFS = [
+      { key: 'dateTime', label: '日期时间 / Date & Time' },
+      { key: 'crewVehicle', label: '工人和车辆 / Crew & Vehicle' },
+      { key: 'propertySize', label: '房型 / Property Size' },
+      { key: 'language', label: '客户语言 / Language' },
+      { key: 'referral', label: '客户来源 / Referral' },
+      { key: 'packing', label: '打包服务 / Packing' },
+      { key: 'estimatedDuration', label: '预计时长 / Duration' },
+      { key: 'loadingAddress', label: '装货地址 / Loading', type: 'textarea' },
+      { key: 'loadingElevator', label: '装货电梯 / Elevator' },
+      { key: 'loadingTimeRestriction', label: '装货时间限制 / Time Restr.' },
+      { key: 'unloadingAddress', label: '卸货地址 / Unloading', type: 'textarea' },
+      { key: 'unloadingElevator', label: '卸货电梯/楼梯 / Elevator' },
+      { key: 'name', label: '姓名 / Name' },
+      { key: 'phone', label: '电话 / Phone' },
+      { key: 'email', label: '邮箱 / Email' },
+      { key: 'hourlyRate', label: '时薪 / Hourly Rate' },
+      { key: 'minimumHours', label: '最低时长 / Minimum' },
+      { key: 'extraFees', label: '额外费用 / Extra Fees' },
+      { key: 'paymentMethod', label: '支付方式 / Payment' },
+      { key: 'suggestedTips', label: '小费建议 / Tips' },
+      { key: 'specialItems', label: '特殊物品 / Special' },
+      { key: 'furniture', label: '普通家具 / Furniture', type: 'textarea' },
+      { key: 'boxes', label: '箱子数量 / Boxes' },
+      { key: 'followUp', label: '需要跟进 / Follow-up' },
+      { key: 'otherNotes', label: '其他备注 / Notes', type: 'textarea' },
+    ];
+
+    // ========== INIT APP ==========
+    function initApp() {
+      loadOrders();
+      updateCounts();
+      renderOrderList();
+    }
+
+    function loadOrders() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) orders = JSON.parse(raw);
+      } catch (e) { orders = []; }
+    }
+
+    function saveOrders() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+      updateCounts();
+    }
+
+    function updateCounts() {
+      const c = { confirmed: 0, pending: 0, completed: 0, cancelled: 0 };
+      orders.forEach(o => { if (c[o.status] !== undefined) c[o.status]++; });
+      document.getElementById('countConfirmed').textContent = c.confirmed;
+      document.getElementById('countPending').textContent = c.pending;
+      document.getElementById('countCompleted').textContent = c.completed;
+    }
+
+    // ========== NAVIGATION ==========
+    function switchTab(tab) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
+      document.getElementById('page-' + tab).classList.remove('hidden');
+
+      if (tab === 'list') renderOrderList();
+      if (tab === 'modify') renderModOrderList();
+    }
+
+    // ========== ORDER LIST ==========
+    function renderOrderList() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const statusFilter = document.getElementById('filterStatus').value;
+      const container = document.getElementById('orderListContainer');
+
+      let filtered = orders;
+      if (statusFilter) filtered = filtered.filter(o => o.status === statusFilter);
+      if (search) {
+        filtered = filtered.filter(o =>
+          (o.name || '').toLowerCase().includes(search) ||
+          (o.phone || '').toLowerCase().includes(search) ||
+          (o.loadingAddress || '').toLowerCase().includes(search) ||
+          (o.unloadingAddress || '').toLowerCase().includes(search)
+        );
+      }
+      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      if (!filtered.length) {
+        container.innerHTML = '<div class="empty-state">没有找到订单 / No orders found</div>';
+        return;
+      }
+
+      let html = '<table><thead><tr>' +
+        '<th>订单号 / ID</th><th>客户 / Customer</th><th>日期 / Date</th>' +
+        '<th>地址 / Address</th><th>状态 / Status</th><th>操作 / Actions</th>' +
+        '</tr></thead><tbody>';
+
+      filtered.forEach(o => {
+        const st = STATUS_LABELS[o.status] || STATUS_LABELS.confirmed;
+        const addr = (o.loadingAddress || '').substring(0, 30) + ' → ' + (o.unloadingAddress || '').substring(0, 30);
+        html += `<tr>
+          <td><b>${o.id}</b><br><span style="font-size:11px;color:var(--text2)">${formatDate(o.createdAt)}</span></td>
+          <td><b>${o.name || '-'}</b><br><span style="font-size:11px;color:var(--text2)">${o.phone || '-'}</span></td>
+          <td>${o.dateTime || '-'}</td>
+          <td style="font-size:12px;max-width:200px;" title="${addr}">${addr}</td>
+          <td><span class="badge ${st.class}"><span class="status-dot ${st.dot}"></span>${st.text}</span></td>
+          <td><div class="table-actions">
+            <button class="btn btn-sm btn-secondary" onclick="viewOrder('${o.id}')">查看</button>
+            <button class="btn btn-sm btn-primary" onclick="startModify('${o.id}')">修改</button>
+            <button class="btn btn-sm btn-secondary" onclick="previewOrderEmail('${o.id}')">邮件</button>
+            ${o.status !== 'completed' ? `<button class="btn btn-sm btn-success" onclick="markCompleted('${o.id}')">完成</button>` : ''}
+            <button class="btn btn-sm btn-danger" onclick="deleteOrder('${o.id}')">删除</button>
+          </div></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '-';
+      const d = new Date(iso);
+      return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+
+    function generateId() {
+      const now = new Date();
+      return 'MV' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '-' + String(Math.floor(Math.random()*900)+100);
+    }
+
+    // ========== PARSER (same as before) ==========
+    function parseMovingInfo(text) {
+      const d = {};
+      const t = text;
+      const extract = (regex, fallback = '') => { const m = t.match(regex); return m ? m[1].trim() : fallback; };
+      const has = (regex) => regex.test(t);
+
+      let dateStr = '';
+      const datePatterns = [
+        /(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\s*[@at]\s*\d{1,2}[\:]?\d{0,2}\s*(?:am|pm)?)/i,
+        /(\d{4}-\d{2}-\d{2}\s+\d{1,2}[\:]?\d{0,2})/,
+        /(明天|后天|今天)\s*[早晚上午下午]*\s*(\d{1,2}[\:]?\d{0,2}\s*(?:am|pm|点|点钟)?)/i,
+        /([A-Za-z]+day\s+[A-Za-z]+\s+\d{1,2}\s+\d{4}\s+at\s+\d{1,2}[\:]?\d{0,2}\s*(?:am|pm)?)/i,
+        /([A-Za-z]+day\s+[A-Za-z]+\s+\d{1,2}\s+at\s+\d{1,2}[\:]?\d{0,2}\s*(?:am|pm)?)/i,
+      ];
+      for (let p of datePatterns) { const m = t.match(p); if (m) { dateStr = m[0]; break; } }
+      if (!dateStr) { const m2 = t.match(/(\d{1,2}\/\d{1,2})/); if (m2) dateStr = m2[0]; }
+      d.dateTime = dateStr || '[待确认 / TBD]';
+
+      d.name = extract(/(?:name|姓名|客户|叫做?|叫|是)\s*[:：]?\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/i, '');
+      if (!d.name) { const nm = t.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})/); if (nm) d.name = nm[1]; }
+      if (!d.name) d.name = '[待确认 / TBD]';
+
+      d.phone = extract(/(?:phone|电话|联系方式|number|手机)\s*[:：]?\s*([\d\-\(\)\s+]{7,20})/i, '');
+      if (!d.phone) { const ph = t.match(/(\b\d{3}[-\s]?\d{3}[-\s]?\d{4}\b)/); if (ph) d.phone = ph[1]; }
+      if (!d.phone) d.phone = '[待确认 / TBD]';
+
+      d.email = extract(/([\w.\-]+@[\w.\-]+\.\w{2,})/, '[待确认 / TBD]');
+
+      let loading = '';
+      const ld = t.match(/(?:装货地址|loading address|from|从)\s*[:：]?\s*([^，。\n]+(?:Unit[:\s]*\d+|Apt\.?\s*\d+|apt\s*\d+)?)/i);
+      if (ld) loading = ld[1].trim();
+      if (!loading) {
+        const ld2 = t.match(/(\d+\s+[\w\s]+(?:Ave|St|Rd|Blvd|Dr|Way|Ct|Ln)[,\s]+[\w\s]+[,\s]+(?:CA|NY|TX|FL|WA|IL|PA|OH|GA|NC|MI|NJ|VA|AZ|MA|TN|IN|MO|MD|WI|CO|MN|SC|AL|LA|KY|OR|OK|CT|UT|IA|NV|AR|MS|KS|NM|NE|WV|ID|HI|NH|ME|MT|RI|DE|SD|ND|AK|VT|WY)\s*\d{5}(?:-\d{4})?)/i);
+        if (ld2) loading = ld2[1];
+      }
+      d.loadingAddress = loading || '[待确认 / TBD]';
+
+      let unloading = '';
+      const ul = t.match(/(?:卸货地址|unloading address|to|搬到)\s*[:：]?\s*([^，。\n]+(?:Unit[:\s]*\d+|Apt\.?\s*\d+)?)/i);
+      if (ul) unloading = ul[1].trim();
+      if (!unloading) {
+        const allAddr = t.match(/(\d+\s+[\w\s]+(?:Ave|St|Rd|Blvd|Dr|Way|Ct|Ln)[,\s]+[\w\s]+[,\s]+(?:CA|NY|TX|FL|WA|IL|PA|OH|GA|NC|MI|NJ|VA|AZ|MA|TN|IN|MO|MD|WI|CO|MN|SC|AL|LA|KY|OR|OK|CT|UT|IA|NV|AR|MS|KS|NM|NE|WV|ID|HI|NH|ME|MT|RI|DE|SD|ND|AK|VT|WY)\s*\d{5}(?:-\d{4})?)/gi);
+        if (allAddr && allAddr.length > 1) unloading = allAddr[1];
+      }
+      d.unloadingAddress = unloading || '[待确认 / TBD]';
+
+      let size = '';
+      const sz = t.match(/(\d)\s*(?:bedroom|房|室|br|bed)/i);
+      if (sz) size = sz[1] + ' bedroom';
+      if (!size) { const sz2 = t.match(/(?:一|1)\s*(?:房|卧室|室|bedroom)/); if (sz2) size = '1 bedroom'; const sz3 = t.match(/(?:两|2)\s*(?:房|卧室|室|bedroom)/); if (sz3) size = '2 bedroom'; }
+      d.propertySize = size || '[待确认 / TBD]';
+
+      let crew = '';
+      const cr = t.match(/(\d)\s*(?:个)?\s*(?:工人|movers?|人)\s*(?:和|&|and)?\s*(?:\d\s*(?:辆)?\s*(?:车|truck|卡车))?/i);
+      if (cr) { const truckMatch = t.match(/(\d)\s*(?:辆)?\s*(?:车|truck)/i); const trucks = truckMatch ? truckMatch[1] : '1'; crew = cr[1] + ' Movers and ' + (trucks === '1' ? 'a Truck' : trucks + ' Trucks'); }
+      if (!crew) { const cr2 = t.match(/(\d)\s*movers?\s*(?:and\s*\w+\s*truck)?/i); if (cr2) crew = cr2[0]; }
+      d.crewVehicle = crew || '[待确认 / TBD]';
+
+      d.language = has(/中文|Chinese|华语/) ? 'Chinese (中文)' : (has(/English|英文/) ? 'English' : '[待确认 / TBD]');
+
+      let referral = '';
+      if (has(/朋友|friend|介绍|referral|推荐/)) referral = 'Friend referral (朋友介绍来的)';
+      else if (has(/网上|online|网站|website|谷歌|Google|Yelp/)) referral = 'Online (网上)';
+      else referral = '[待确认 / TBD]';
+      d.referral = referral;
+
+      d.packing = has(/不需要打包|no packing|not packing|无需打包/) ? 'Not required (不需要打包)' : (has(/需要打包|packing|打包/) ? 'Required (需要打包)' : '[待确认 / TBD]');
+
+      let duration = '';
+      const dur = t.match(/(?:预计|大概|大约|约|预计)?\s*(\d)\s*(?:个)?\s*(?:小时|hour|hr)/i);
+      if (dur) duration = dur[1] + ' hours';
+      d.estimatedDuration = duration || '[待确认 / TBD]';
+
+      d.loadingElevator = has(/装货.*电梯|loading.*elevator|有电梯|with elevator/i) ? 'With Elevator (有电梯)' : (has(/没电梯|no elevator|楼梯|stairs/i) ? 'Stairs (楼梯)' : '[待确认 / TBD]');
+      d.unloadingElevator = has(/卸货.*电梯|unloading.*elevator/i) ? 'With Elevator (有电梯)' : (has(/卸货.*楼梯|unloading.*stairs|house/i) ? 'House (独栋/需确认楼梯)' : '[需要跟进：是否有楼梯，在几楼]');
+      d.loadingTimeRestriction = has(/装货.*时间限制|loading.*time|没有时间限制|no time limit/i) ? 'No time limit (没有时间限制)' : '[待确认 / TBD]';
+
+      let rate = '';
+      const rt = t.match(/\$(\d+)\s*(?:\/|每小时|per hour|一小时|an hour|hr)/i);
+      if (rt) rate = '$' + rt[1] + '/hour'; else { const rt2 = t.match(/(\d+)\s*(?:块|元|美金|美元)?\s*(?:\/|每小时|per hour|一小时|an hour)/i); if (rt2) rate = '$' + rt2[1] + '/hour'; }
+      d.hourlyRate = rate || '[待确认 / TBD]';
+
+      let minHours = '';
+      const mh = t.match(/(?:最低|minimum|最少)\s*(\d)\s*(?:个)?\s*(?:小时|hour|hr)/i);
+      if (mh) minHours = mh[1] + ' hours';
+      d.minimumHours = minHours || '[待确认 / TBD]';
+
+      let extra = '';
+      const ex = t.match(/(?:额外|extra)\s*\$?(\d+)\s*(?:块|元|美金|美元)?\s*(?:on|用于|油费|gas|其他)/i);
+      if (ex) extra = 'Extra $' + ex[1] + ' on gas';
+      d.extraFees = extra || '—';
+
+      d.paymentMethod = has(/cash|现金/) && has(/no cards|不收卡|不接受卡/) ? 'Cash Preferred, NO Cards (现金支付，不收卡)' : (has(/cash|现金/) ? 'Cash (现金)' : '[待确认 / TBD]');
+
+      let tips = '';
+      const tp = t.match(/(?:小费|tips?)\s*(?:建议)?\s*[:：]?\s*\$?(\d+)\s*(?:\/|每小时|per hour|一小时)/i);
+      if (tp) tips = '$' + tp[1] + '/hour per mover (please pay cash directly to movers)';
+      d.suggestedTips = tips || '[待确认 / TBD]';
+
+      let special = '';
+      if (has(/no special|没有特殊|无特殊/)) special = 'None (无)';
+      else { const spItems = []; if (has(/钢琴|piano/i)) spItems.push('Piano'); if (has(/大型家电|appliances|冰箱|洗衣机|烘干机|refrigerator|washer|dryer/i)) spItems.push('Appliances'); if (has(/overly heavy|overly large|特别重|特别大型/i)) spItems.push('Overly Heavy/Large furniture'); if (spItems.length) special = spItems.join(', '); }
+      d.specialItems = special || 'None (无)';
+
+      let furniture = '';
+      const furnMatch = t.match(/(?:有|包含|with)?\s*([^。]+(?:床|电视|桌|沙发|柜|茶几|chair|desk|sofa|table|cabinet|dresser|bookshelf)[^。]*)/);
+      if (furnMatch) furniture = furnMatch[1].replace(/[，,]/g, ', ');
+      d.furniture = furniture || '—';
+
+      let boxes = '';
+      const bx = t.match(/(\d+)\s*(?:个)?\s*(?:箱子|boxes?|包裹|package)/i);
+      if (bx) { const packed = has(/打包好|packed|already packed|都已经打包好/) ? ' (already packed / 都已经打包好)' : ''; boxes = bx[1] + ' boxes' + packed; }
+      d.boxes = boxes || '—';
+
+      let followup = '';
+      const fu = t.match(/(?:需要跟进|follow.up|跟进|注意|todo)\s*[:：]?\s*([^。\n]+)/i);
+      if (fu) followup = fu[1].trim();
+      d.followUp = followup || '[待确认 / TBD]';
+
+      let otherNotes = '';
+      const notes = t.match(/(?:备注|notes?|其他|other)\s*[:：]?\s*([^。\n]+)/i);
+      if (notes) otherNotes = notes[1].trim();
+      d.otherNotes = otherNotes || '—';
+
+      d.companyName = 'ABC Moving';
+      return d;
+    }
+
+    // ========== NEW ORDER ==========
+    const DEMO_TEXT = `明天早上9点，Eric Li，从 Sunnyvale 搬到 Redwood City，一个卧室，有电梯，2个工人1辆车，中文客户，朋友介绍的，不需要打包，预计2小时。装货地址是 299 W Washington Ave, Sunnyvale, CA 94086, Unit 311, Apartment，电梯，没有时间限制。卸货地址 100 King St, Redwood City, CA 94061, House。电话 9161873963，邮箱 ericli@gmail.com。价格是120一小时，最低2小时，额外30块油费，现金支付，不收卡。小费建议10块一小时给每个工人。没有特殊物品。有1个Queen床，1个电视，2个升降桌，4个显示器，20个箱子都已经打包好了，1个2人座沙发，1个电视柜，1个茶几。需要跟进：卸货地址有没有楼梯，在几楼。`;
+
+    function loadNewDemo() { document.getElementById('newRawInput').value = DEMO_TEXT; }
+    function clearNewForm() { document.getElementById('newRawInput').value = ''; document.getElementById('newOrderForm').classList.add('hidden'); }
+
+    function generateNewOrder() {
+      const text = document.getElementById('newRawInput').value.trim();
+      if (!text) { alert('请输入原始记录 / Please enter raw notes'); return; }
+      const data = parseMovingInfo(text);
+      renderForm('newFormFields', data);
+      document.getElementById('newOrderForm').classList.remove('hidden');
+      highlightUncertain('newFormFields');
+    }
+
+    function renderForm(containerId, data) {
+      const container = document.getElementById(containerId);
+      let html = '';
+      let currentSection = '';
+
+      const sections = [
+        { title: '基本信息 / Basic Info', keys: ['dateTime','crewVehicle','propertySize','language','referral','packing','estimatedDuration'] },
+        { title: '地址信息 / Addresses', keys: ['loadingAddress','loadingElevator','loadingTimeRestriction','unloadingAddress','unloadingElevator'] },
+        { title: '联系人 / Contact', keys: ['name','phone','email'] },
+        { title: '费用说明 / Pricing', keys: ['hourlyRate','minimumHours','extraFees','paymentMethod','suggestedTips'] },
+        { title: '物品清单 / Inventory', keys: ['specialItems','furniture','boxes'] },
+        { title: '备注 / Notes', keys: ['followUp','otherNotes'] },
+      ];
+
+      sections.forEach(sec => {
+        html += `<div class="section-title">${sec.title}</div>`;
+        sec.keys.forEach(key => {
+          const def = FIELD_DEFS.find(f => f.key === key);
+          const val = data[key] || '';
+          const inputType = def.type === 'textarea' ? 'textarea' : 'input';
+          const inputEl = def.type === 'textarea'
+            ? `<textarea id="fld_${key}" onchange="markFieldDirty('${key}')">${escapeHtml(val)}</textarea>`
+            : `<input type="text" id="fld_${key}" value="${escapeHtml(val)}" onchange="markFieldDirty('${key}')" />`;
+          html += `<div class="field-row"><div class="field-label">${def.label}</div><div class="field-value">${inputEl}</div></div>`;
+        });
+      });
+      container.innerHTML = html;
+    }
+
+    function markFieldDirty(key) {
+      const el = document.getElementById('fld_' + key);
+      if (el) el.dataset.dirty = '1';
+    }
+
+    function highlightUncertain(containerId) {
+      const container = document.getElementById(containerId);
+      container.querySelectorAll('input, textarea').forEach(el => {
+        if (el.value.includes('待确认') || el.value.includes('跟进') || el.value.includes('TBD')) {
+          el.style.color = '#d97706'; el.style.background = '#fffbeb';
+        }
+      });
+    }
+
+    function collectFormData() {
+      const data = {};
+      FIELD_DEFS.forEach(f => {
+        const el = document.getElementById('fld_' + f.key);
+        data[f.key] = el ? el.value : '';
+      });
+      data.companyName = 'ABC Moving';
+      return data;
+    }
+
+    function saveNewOrder() {
+      const data = collectFormData();
+      data.id = generateId();
+      data.status = 'confirmed';
+      data.createdAt = new Date().toISOString();
+      data.modifiedAt = data.createdAt;
+      data.modificationHistory = [];
+      orders.push(data);
+      saveOrders();
+      alert('订单已保存 / Order saved: ' + data.id);
+      switchTab('list');
+    }
+
+    // ========== VIEW / EDIT / DELETE ==========
+    function viewOrder(id) {
+      const o = orders.find(x => x.id === id);
+      if (!o) return;
+      // Render in a modal or alert for now - simplified
+      let html = `<div style="max-height:70vh;overflow-y:auto;">`;
+      html += `<h3>订单 ${o.id}</h3>`;
+      FIELD_DEFS.forEach(f => {
+        html += `<div style="margin-bottom:6px;font-size:13px;"><b>${f.label}:</b> ${escapeHtml(o[f.key] || '-')}</div>`;
+      });
+      html += `</div>`;
+      showModal('订单详情 / Order Details', html);
+    }
+
+    function deleteOrder(id) {
+      if (!confirm('确定删除订单 ' + id + ' ? / Delete order ' + id + '?')) return;
+      orders = orders.filter(o => o.id !== id);
+      saveOrders();
+      renderOrderList();
+    }
+
+    function markCompleted(id) {
+      const o = orders.find(x => x.id === id);
+      if (o) { o.status = 'completed'; o.modifiedAt = new Date().toISOString(); saveOrders(); renderOrderList(); }
+    }
+
+    // ========== EMAIL ==========
+    function buildEmail(d) {
+      return `Dear ${(d.name||'').replace(/\[.*?\]/g,'').trim()||'Customer'},
+
+This is to confirm your moving reservation on ${(d.dateTime||'').replace(/\[.*?\]/g,'').trim()||'[DATE]'}. We will send ${(d.crewVehicle||'').replace(/\[.*?\]/g,'').trim()||'[CREW]'}. ${(d.propertySize||'').replace(/\[.*?\]/g,'').trim()||'[SIZE]'} size move.
+
+Loading address: ${(d.loadingAddress||'').replace(/\[.*?\]/g,'').trim()||'[ADDRESS]'}
+Unloading address: ${(d.unloadingAddress||'').replace(/\[.*?\]/g,'').trim()||'[ADDRESS]'}
+
+Contact number: ${(d.phone||'').replace(/\[.*?\]/g,'').trim()||'[PHONE]'}
+Name: ${(d.name||'').replace(/\[.*?\]/g,'').trim()||'[NAME]'}
+Email: ${(d.email||'').replace(/\[.*?\]/g,'').trim()||'[EMAIL]'}
+
+${(d.hourlyRate||'').replace(/\[.*?\]/g,'').trim()||'[RATE]'} minimum ${(d.minimumHours||'').replace(/\[.*?\]/g,'').trim()||'[HOURS]'}. ${d.extraFees!=='—'?(d.extraFees||'').replace(/\[.*?\]/g,'').trim():''} ${(d.paymentMethod||'').replace(/\[.*?\]/g,'').trim()||'[PAYMENT]'}
+
+Suggested tips: ${(d.suggestedTips||'').replace(/\[.*?\]/g,'').trim()||'[TIPS]'}
+
+${d.specialItems.includes('None')||d.specialItems.includes('无')?'No special items (Piano, Appliances, Overly Heavy/Large furniture)':'Special items: '+(d.specialItems||'').replace(/\[.*?\]/g,'').trim()}
+
+${d.furniture!=='—'?(d.furniture||'').replace(/\[.*?\]/g,'').trim():''}
+${d.boxes!=='—'?(d.boxes||'').replace(/\[.*?\]/g,'').trim():''}
+
+${d.followUp!=='[待确认 / TBD]'&&d.followUp?'Follow-up needed: '+(d.followUp||'').replace(/\[.*?\]/g,'').trim():''}
+
+如有变动请提前告知 / Please let us know if there are any changes.
+
+Best regards,
+${d.companyName||'ABC Moving'}`;
+    }
+
+    function previewEmail(mode) {
+      let data;
+      if (mode === 'new') data = collectFormData();
+      else data = currentModifyingOrder || {};
+      document.getElementById('emailPreviewContent').textContent = buildEmail(data);
+      document.getElementById('emailModal').classList.remove('hidden');
+    }
+
+    function previewOrderEmail(id) {
+      const o = orders.find(x => x.id === id);
+      if (!o) return;
+      document.getElementById('emailPreviewContent').textContent = buildEmail(o);
+      document.getElementById('emailModal').classList.remove('hidden');
+    }
+
+    function closeEmailModal() { document.getElementById('emailModal').classList.add('hidden'); }
+    function copyEmailPreview() {
+      const text = document.getElementById('emailPreviewContent').textContent;
+      navigator.clipboard.writeText(text).then(() => alert('已复制 / Copied')).catch(() => {
+        const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); alert('已复制 / Copied');
+      });
+    }
+
+    // ========== MODIFY ORDER ==========
+    function renderModOrderList() {
+      const container = document.getElementById('modOrderList');
+      const eligible = orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
+      if (!eligible.length) {
+        container.innerHTML = '<div class="empty-state">没有可修改的订单 / No modifiable orders</div>';
+        return;
+      }
+      let html = '<table><thead><tr><th>选择 / Select</th><th>订单号 / ID</th><th>客户 / Customer</th><th>日期 / Date</th><th>状态 / Status</th></tr></thead><tbody>';
+      eligible.forEach(o => {
+        const st = STATUS_LABELS[o.status];
+        html += `<tr>
+          <td><button class="btn btn-sm btn-primary" onclick="selectOrderForModify('${o.id}')">选择 / Select</button></td>
+          <td>${o.id}</td>
+          <td>${o.name||'-'}<br><span style="font-size:11px;color:var(--text2)">${o.phone||'-'}</span></td>
+          <td>${o.dateTime||'-'}</td>
+          <td><span class="badge ${st.class}"><span class="status-dot ${st.dot}"></span>${st.text}</span></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function startModify(id) {
+      switchTab('modify');
+      selectOrderForModify(id);
+    }
+
+    function selectOrderForModify(id) {
+      currentModifyingOrder = orders.find(o => o.id === id);
+      if (!currentModifyingOrder) return;
+
+      document.getElementById('modStep1').classList.add('hidden');
+      document.getElementById('modStep2').classList.remove('hidden');
+      document.getElementById('modStep3').classList.add('hidden');
+
+      // Show original preview
+      let preview = `<div style="font-size:12px;line-height:1.6;">`;
+      FIELD_DEFS.forEach(f => {
+        preview += `<div style="margin-bottom:4px;"><b style="color:var(--text2)">${f.label}:</b> ${escapeHtml(currentModifyingOrder[f.key]||'-')}</div>`;
+      });
+      preview += `</div>`;
+      document.getElementById('modOriginalPreview').innerHTML = preview;
+      document.getElementById('modNewInput').value = '';
+    }
+
+    function cancelModify() {
+      currentModifyingOrder = null;
+      pendingChanges = [];
+      document.getElementById('modStep1').classList.remove('hidden');
+      document.getElementById('modStep2').classList.add('hidden');
+      document.getElementById('modStep3').classList.add('hidden');
+      renderModOrderList();
+    }
+
+    function backToModStep2() {
+      document.getElementById('modStep2').classList.remove('hidden');
+      document.getElementById('modStep3').classList.add('hidden');
+    }
+
+    function compareChanges() {
+      if (!currentModifyingOrder) return;
+      const newText = document.getElementById('modNewInput').value.trim();
+      if (!newText) { alert('请输入新内容 / Please enter new content'); return; }
+
+      const newData = parseMovingInfo(newText);
+      const oldData = currentModifyingOrder;
+      pendingChanges = [];
+
+      FIELD_DEFS.forEach(f => {
+        const oldVal = (oldData[f.key] || '').trim();
+        const newVal = (newData[f.key] || '').trim();
+        if (newVal && newVal !== oldVal && !newVal.includes('待确认') && !newVal.includes('TBD')) {
+          pendingChanges.push({ key: f.key, label: f.label, oldValue: oldVal, newValue: newVal });
+        }
+      });
+
+      renderComparison();
+      document.getElementById('modStep2').classList.add('hidden');
+      document.getElementById('modStep3').classList.remove('hidden');
+    }
+
+    function renderComparison() {
+      const container = document.getElementById('modComparisonResult');
+      if (!pendingChanges.length) {
+        container.innerHTML = '<div class="empty-state">未检测到修改 / No changes detected</div>';
+        return;
+      }
+
+      let html = `<div style="margin-bottom:12px;font-size:13px;color:var(--text2);">检测到 <b>${pendingChanges.length}</b> 处修改 / <b>${pendingChanges.length}</b> changes detected. 请逐条确认 / Please confirm each:</div>`;
+
+      pendingChanges.forEach((ch, idx) => {
+        html += `<div class="change-item" id="changeItem_${idx}">
+          <div class="change-header">
+            <span class="change-field">${ch.label}</span>
+            <span class="badge badge-pending">待确认 / Pending</span>
+          </div>
+          <div class="change-values">
+            <div><div style="font-size:11px;color:var(--text2);margin-bottom:2px;">原值 / Old:</div><div class="old-val">${escapeHtml(ch.oldValue || '(空/Empty)')}</div></div>
+            <div><div style="font-size:11px;color:var(--text2);margin-bottom:2px;">新值 / New:</div><div class="new-val">${escapeHtml(ch.newValue)}</div></div>
+          </div>
+          <div class="change-actions">
+            <button class="btn btn-sm btn-success" onclick="approveChange(${idx})">✅ 接受 / Accept</button>
+            <button class="btn btn-sm btn-danger" onclick="rejectChange(${idx})">❌ 拒绝 / Reject</button>
+          </div>
+        </div>`;
+      });
+
+      html += `<div style="margin-top:12px;padding:12px;background:var(--primary-soft);border-radius:8px;font-size:13px;">
+        <b>批量操作 / Batch:</b>
+        <div class="btn-row" style="margin-top:8px;">
+          <button class="btn btn-sm btn-success" onclick="approveAllChanges()">全部接受 / Accept All</button>
+          <button class="btn btn-sm btn-danger" onclick="rejectAllChanges()">全部拒绝 / Reject All</button>
+        </div>
+      </div>`;
+
+      container.innerHTML = html;
+    }
+
+    function approveChange(idx) {
+      const el = document.getElementById('changeItem_' + idx);
+      if (el) {
+        el.style.opacity = '0.5';
+        el.querySelector('.badge').className = 'badge badge-confirmed';
+        el.querySelector('.badge').textContent = '已接受 / Accepted';
+        el.querySelector('.change-actions').innerHTML = '<span style="color:var(--success);font-size:12px;">✅ 已接受 / Accepted</span>';
+        pendingChanges[idx].approved = true;
+      }
+    }
+
+    function rejectChange(idx) {
+      const el = document.getElementById('changeItem_' + idx);
+      if (el) {
+        el.style.opacity = '0.5';
+        el.querySelector('.badge').className = 'badge badge-cancelled';
+        el.querySelector('.badge').textContent = '已拒绝 / Rejected';
+        el.querySelector('.change-actions').innerHTML = '<span style="color:var(--danger);font-size:12px;">❌ 已拒绝 / Rejected</span>';
+        pendingChanges[idx].approved = false;
+      }
+    }
+
+    function approveAllChanges() {
+      pendingChanges.forEach((_, idx) => approveChange(idx));
+    }
+
+    function rejectAllChanges() {
+      pendingChanges.forEach((_, idx) => rejectChange(idx));
+    }
+
+    function applyChanges() {
+      if (!currentModifyingOrder) return;
+
+      const approved = pendingChanges.filter(c => c.approved === true);
+      if (!approved.length) {
+        alert('没有接受的修改 / No changes accepted');
+        return;
+      }
+
+      const historyEntry = {
+        date: new Date().toISOString(),
+        changes: approved.map(c => ({ field: c.label, oldValue: c.oldValue, newValue: c.newValue }))
+      };
+
+      approved.forEach(ch => {
+        currentModifyingOrder[ch.key] = ch.newValue;
+      });
+
+      currentModifyingOrder.status = 'pending';
+      currentModifyingOrder.modifiedAt = new Date().toISOString();
+      if (!currentModifyingOrder.modificationHistory) currentModifyingOrder.modificationHistory = [];
+      currentModifyingOrder.modificationHistory.push(historyEntry);
+
+      saveOrders();
+      alert(`已应用 ${approved.length} 处修改 / ${approved.length} changes applied.\n订单状态已设为「待修改」/ Order status set to "Pending".\n请发送新的确认邮件给客户。`);
+
+      cancelModify();
+      switchTab('list');
+    }
+
+    // ========== AUDIO HANDLING ==========
+    function handleAudioDrop(e) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length) processAudioFile(files[0]);
+    }
+
+    function handleAudioSelect(e) {
+      if (e.target.files.length) processAudioFile(e.target.files[0]);
+    }
+
+    function handleModAudioSelect(e) {
+      if (e.target.files.length) {
+        const file = e.target.files[0];
+        alert(`音频已上传: ${file.name}\n\n注意：纯前端暂不支持自动转文字。请使用麦克风实时转写，或先将录音转为文字后粘贴到左侧输入框。\n\nAudio uploaded: ${file.name}\nNote: Auto transcription requires backend API. Please use microphone or paste transcript.`);
+      }
+    }
+
+    function processAudioFile(file) {
+      alert(`音频已选择: ${file.name}\n\n注意：浏览器端暂不支持自动转文字。请先使用其他工具转文字后粘贴到输入框。\n\nAudio selected: ${file.name}\nNote: Please transcribe externally and paste text.`);
+    }
+
+    // ========== MICROPHONE RECORDING ==========
+    async function toggleRecording() {
+      const btn = document.getElementById('recBtn');
+      const status = document.getElementById('recStatus');
+      const resultDiv = document.getElementById('recResult');
+
+      if (isRecording) {
+        // Stop
+        if (mediaRecorder) mediaRecorder.stop();
+        isRecording = false;
+        btn.classList.remove('recording');
+        status.textContent = '录音已停止 / Recording stopped';
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(audioChunks, { type: 'audio/webm' });
+          const url = URL.createObjectURL(blob);
+          resultDiv.innerHTML = `<div style="margin-top:8px;"><audio controls src="${url}" style="width:100%;"></audio><div style="font-size:11px;color:var(--text2);margin-top:4px;">录音已保存，可回放 / Recording saved</div></div>`;
+          // Also try speech recognition if available
+          status.textContent = '录音完成 / Recording complete';
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+        btn.classList.add('recording');
+        status.textContent = '正在录音... / Recording...';
+        resultDiv.innerHTML = '';
+
+        // Auto-stop after 5 minutes
+        setTimeout(() => { if (isRecording) toggleRecording(); }, 300000);
+
+      } catch (err) {
+        alert('无法访问麦克风 / Cannot access microphone: ' + err.message);
+      }
+    }
+
+    // ========== MODAL ==========
+    function showModal(title, content) {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `<div class="modal-content">
+        <div class="modal-header"><h3>${title}</h3><button class="close-btn" onclick="this.closest('.modal-overlay').remove()">&times;</button></div>
+        <div>${content}</div>
+        <div class="btn-row" style="margin-top:12px;"><button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">关闭 / Close</button></div>
+      </div>`;
+      modal.onclick = e => { if (e.target === modal) modal.remove(); };
+      document.body.appendChild(modal);
+    }
+
+    // ========== EXPORT & COPY ==========
+    function exportOrderListCSV() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const statusFilter = document.getElementById('filterStatus').value;
+      let filtered = orders;
+      if (statusFilter) filtered = filtered.filter(o => o.status === statusFilter);
+      if (search) {
+        filtered = filtered.filter(o =>
+          (o.name || '').toLowerCase().includes(search) ||
+          (o.phone || '').toLowerCase().includes(search)
+        );
+      }
+      if (!filtered.length) { alert('没有数据可导出 / No data to export'); return; }
+
+      const headers = ['订单号/ID', '客户姓名/Name', '电话/Phone', '邮箱/Email', '日期时间/DateTime', '装货地址/Loading', '卸货地址/Unloading', '房型/Size', '工人车辆/Crew', '时薪/Rate', '最低时长/MinHours', '支付方式/Payment', '状态/Status', '创建时间/Created'];
+      const rows = filtered.map(o => [
+        o.id, o.name, o.phone, o.email, o.dateTime, o.loadingAddress, o.unloadingAddress,
+        o.propertySize, o.crewVehicle, o.hourlyRate, o.minimumHours, o.paymentMethod,
+        o.status, formatDate(o.createdAt)
+      ].map(v => `"${(v || '').replace(/"/g, '""')}"`).join(','));
+
+      const csv = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `moving_orders_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function copyOrderList() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const statusFilter = document.getElementById('filterStatus').value;
+      let filtered = orders;
+      if (statusFilter) filtered = filtered.filter(o => o.status === statusFilter);
+      if (search) {
+        filtered = filtered.filter(o =>
+          (o.name || '').toLowerCase().includes(search) ||
+          (o.phone || '').toLowerCase().includes(search)
+        );
+      }
+      if (!filtered.length) { alert('没有数据可复制 / No data to copy'); return; }
+
+      let text = '搬家订单列表 / Moving Order List\n' + '='.repeat(60) + '\n\n';
+      filtered.forEach(o => {
+        text += `【${o.id}】${o.name || '-'} | ${o.phone || '-'}\n`;
+        text += `  日期: ${o.dateTime || '-'}\n`;
+        text += `  装货: ${o.loadingAddress || '-'}\n`;
+        text += `  卸货: ${o.unloadingAddress || '-'}\n`;
+        text += `  房型: ${o.propertySize || '-'} | 工人: ${o.crewVehicle || '-'}\n`;
+        text += `  价格: ${o.hourlyRate || '-'} (最低${o.minimumHours || '-'})\n`;
+        text += `  状态: ${(STATUS_LABELS[o.status]||{}).text || o.status}\n\n`;
+      });
+
+      navigator.clipboard.writeText(text).then(() => alert('订单列表已复制 / Order list copied')).catch(() => {
+        const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); alert('订单列表已复制 / Order list copied');
+      });
+    }
+
+    // ========== SPEECH RECOGNITION ==========
+    function isSpeechRecognitionAvailable() {
+      return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+    }
+
+    function startSpeechRecognition(targetInputId) {
+      if (!isSpeechRecognitionAvailable()) {
+        alert('您的浏览器不支持语音识别 / Speech recognition not supported in this browser.\n\n请使用 Chrome 或 Edge 浏览器。');
+        return;
+      }
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'zh-CN';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      const targetEl = document.getElementById(targetInputId);
+      let finalTranscript = targetEl.value || '';
+
+      recognition.onstart = () => {
+        showToast('🎤 语音识别已启动 / Speech recognition started');
+      };
+
+      recognition.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interim += event.results[i][0].transcript;
+          }
+        }
+        targetEl.value = finalTranscript + interim;
+      };
+
+      recognition.onerror = (e) => {
+        console.error('Speech error:', e);
+        if (e.error === 'not-allowed') alert('麦克风权限被拒绝 / Microphone permission denied');
+      };
+
+      recognition.onend = () => {
+        showToast('语音识别已结束 / Speech recognition ended');
+        targetEl.value = finalTranscript;
+      };
+
+      recognition.start();
+      // Store reference to stop later
+      window._currentRecognition = recognition;
+      return recognition;
+    }
+
+    function stopSpeechRecognition() {
+      if (window._currentRecognition) {
+        window._currentRecognition.stop();
+        window._currentRecognition = null;
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;top:20px;right:20px;background:var(--primary);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Upgrade mod audio upload to use speech recognition
+    function handleModAudioSelect(e) {
+      if (!e.target.files.length) return;
+      const file = e.target.files[0];
+
+      if (isSpeechRecognitionAvailable()) {
+        const proceed = confirm(`音频已上传: ${file.name}\n\n浏览器支持语音识别。是否直接开始语音转文字？\n\nAudio uploaded: ${file.name}\nSpeech recognition is available. Start transcribing now?`);
+        if (proceed) {
+          document.getElementById('modNewInput').value = '';
+          startSpeechRecognition('modNewInput');
+          showToast('请用麦克风说出修改内容，或播放音频让麦克风拾音 / Please speak changes or play audio near microphone');
+          return;
+        }
+      }
+
+      alert(`音频已上传: ${file.name}\n\n注意：请先将录音转为文字后粘贴到左侧输入框。\n\nAudio uploaded: ${file.name}\nNote: Please transcribe to text and paste in the left box.`);
+    }
+
+    // Upgrade new-order audio upload
+    function processAudioFile(file) {
+      if (isSpeechRecognitionAvailable()) {
+        const proceed = confirm(`音频已选择: ${file.name}\n\n浏览器支持语音识别。是否直接开始语音转文字？\n\nAudio selected: ${file.name}\nSpeech recognition is available. Start transcribing now?`);
+        if (proceed) {
+          document.getElementById('newRawInput').value = '';
+          startSpeechRecognition('newRawInput');
+          showToast('请用麦克风说出订单信息，或播放音频让麦克风拾音 / Please speak order info or play audio near microphone');
+          return;
+        }
+      }
+      alert(`音频已选择: ${file.name}\n\n注意：请先将录音转为文字后粘贴到输入框。\n\nAudio selected: ${file.name}\nNote: Please transcribe to text and paste.`);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ========== LOGIN SYSTEM ==========
+    const PASSWORD_KEY = 'mom_password_hash';
+    const LOGIN_STATE_KEY = 'mom_logged_in';
+    // 默认密码配置 - 你可以在这里修改默认密码
+    const DEFAULT_PASSWORD = 'abc2026';
+
+    function hashPassword(pw) {
+      let h = 0;
+      for (let i = 0; i < pw.length; i++) {
+        h = ((h << 5) - h) + pw.charCodeAt(i); h |= 0;
+      }
+      return String(h);
+    }
+
+    function hasPassword() {
+      return !!localStorage.getItem(PASSWORD_KEY);
+    }
+
+    function checkLogin() {
+      if (localStorage.getItem(LOGIN_STATE_KEY) === '1') {
+        showApp();
+        return;
+      }
+      const screen = document.getElementById('loginScreen');
+      const title = document.getElementById('loginTitle');
+      const sub = document.getElementById('loginSub');
+      const hint = document.getElementById('loginHint');
+      const btn = document.getElementById('loginBtn');
+      const input = document.getElementById('loginPassword');
+
+      if (!hasPassword()) {
+        title.textContent = '首次使用 / First Time Setup';
+        sub.textContent = '请设置访问密码 / Please set an access password';
+        hint.textContent = '密码将保存在本地浏览器 / Password stored locally';
+        btn.textContent = '设置密码 / Set Password';
+        input.placeholder = '设置密码 / Set password';
+      } else {
+        title.textContent = '欢迎回来 / Welcome Back';
+        sub.textContent = '请输入密码进入系统 / Enter password to continue';
+        hint.textContent = '密码仅保存在当前浏览器 / Password stored in this browser only';
+        btn.textContent = '进入系统 / Enter';
+        input.placeholder = '输入密码 / Enter password';
+      }
+      screen.style.display = 'flex';
+    }
+
+    function doLogin() {
+      const input = document.getElementById('loginPassword');
+      const error = document.getElementById('loginError');
+      const pw = input.value.trim();
+      if (!pw) { error.textContent = '请输入密码 / Please enter password'; return; }
+
+      if (!hasPassword()) {
+        // First time: set password
+        localStorage.setItem(PASSWORD_KEY, hashPassword(pw));
+        localStorage.setItem(LOGIN_STATE_KEY, '1');
+        showApp();
+        return;
+      }
+
+      const stored = localStorage.getItem(PASSWORD_KEY);
+      if (hashPassword(pw) === stored) {
+        localStorage.setItem(LOGIN_STATE_KEY, '1');
+        showApp();
+      } else {
+        error.textContent = '密码错误 / Incorrect password';
+        input.value = '';
+        input.focus();
+      }
+    }
+
+    function showApp() {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      initApp();
+    }
+
+    function logout() {
+      localStorage.removeItem(LOGIN_STATE_KEY);
+      location.reload();
+    }
+
+    // ========== INIT ==========
+    checkLogin();
+  </script>
+</body>
+</html>
